@@ -31,24 +31,30 @@ class ProfileUpdate(BaseModel):
 
 @router.patch("/profile")
 async def update_profile(payload: ProfileUpdate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if payload.full_name is not None:
-        user.full_name = payload.full_name
-    if payload.about is not None:
-        user.about = payload.about
-    if payload.profile_picture is not None:
-        user.avatar = payload.profile_picture
+    try:
+        if payload.full_name is not None:
+            user.full_name = payload.full_name
+        if payload.about is not None:
+            user.about = payload.about
+        if payload.profile_picture is not None:
+            user.avatar = payload.profile_picture
 
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
-    return {
-        "id": user.id,
-        "username": user.username,
-        "profile_picture": user.avatar,
-        "full_name": user.full_name,
-        "about": user.about
-    }
+        return {
+            "id": user.id,
+            "username": user.username,
+            "profile_picture": user.avatar,
+            "full_name": user.full_name,
+            "about": user.about
+        }
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"ERROR updating profile: {e}\n{tb}")
+        raise HTTPException(status_code=500, detail=f"Profile update failed: {str(e)}")
 
 
 class RegisterIn(BaseModel):

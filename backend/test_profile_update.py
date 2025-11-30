@@ -1,14 +1,35 @@
 import requests
 import json
 import base64
+import time
 
 BASE_URL = "https://a-whatsap-replica.onrender.com/api"
 
 def test_large_profile_update():
+    # 0. Register (since DB was reset)
+    register_url = f"{BASE_URL}/auth/register"
+    username = f"testuser_{int(time.time())}"
+    register_payload = {
+        "username": username,
+        "password": "testpassword",
+        "full_name": "Test Script User"
+    }
+    
+    print(f"Registering {username}...")
+    try:
+        resp = requests.post(register_url, json=register_payload)
+        if resp.status_code != 200:
+            print(f"Registration failed: {resp.status_code} {resp.text}")
+            return
+        print("Registration successful.")
+    except Exception as e:
+        print(f"Registration error: {e}")
+        return
+
     # 1. Login
     login_url = f"{BASE_URL}/auth/login"
     login_payload = {
-        "username": "testuser_script",
+        "username": username,
         "password": "testpassword"
     }
     

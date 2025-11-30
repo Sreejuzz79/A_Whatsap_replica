@@ -131,53 +131,65 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None), db:
                 content = message_data.get("content")
                 
                 if receiver_id and content:
-                    # 1. Find or Create Conversation
-                    # Check if conversation exists
-                    query = select(Conversation).where(
-                        or_(
-                            and_(Conversation.user1_id == user_id, Conversation.user2_id == receiver_id),
-                            and_(Conversation.user1_id == receiver_id, Conversation.user2_id == user_id)
+                    try:
+                        receiver_id = int(receiver_id)
+                        print(f"DEBUG: Processing message from {user_id} to {receiver_id}")
+
+                        # 1. Find or Create Conversation
+                        # Check if conversation exists
+                        query = select(Conversation).where(
+                            or_(
+                                and_(Conversation.user1_id == user_id, Conversation.user2_id == receiver_id),
+                                and_(Conversation.user1_id == receiver_id, Conversation.user2_id == user_id)
+                            )
                         )
-                    )
-                    result = await db.execute(query)
-                    conversation = result.scalars().first()
-                    
-                    if not conversation:
-                        conversation = Conversation(user1_id=user_id, user2_id=receiver_id)
-                        db.add(conversation)
+                        result = await db.execute(query)
+                        conversation = result.scalars().first()
+                        
+                        if not conversation:
+                            conversation = Conversation(user1_id=user_id, user2_id=receiver_id)
+                            db.add(conversation)
+                            await db.commit()
+                            await db.refresh(conversation)
+                        
+                        # 2. Save Message
+                        new_message = Message(
+                            conversation_id=conversation.id,
+                            sender_id=user_id,
+                            content=content,
+                            type='text'
+                        )
+                        db.add(new_message)
                         await db.commit()
-                        await db.refresh(conversation)
-                    
-                    # 2. Save Message
-                    new_message = Message(
-                        conversation_id=conversation.id,
-                        sender_id=user_id,
-                        content=content,
-                        type='text'
-                    )
-                    db.add(new_message)
-                    await db.commit()
-                    await db.refresh(new_message)
-                    
-                    # 3. Broadcast to Receiver
-                    response = {
-                        "type": "new_message",
-                        "id": new_message.id,
-                        "message": content,
-                        "sender_id": user_id,
-                        "timestamp": new_message.created_at.isoformat(),
-                        # We might want to send sender_username too, but for now let's keep it minimal
-                    }
-                    await manager.send_personal_message(response, receiver_id)
-                    
-                    # 4. Echo back to Sender (so they know it's sent/saved)
-                    await manager.send_personal_message({
-                        "type": "message_sent",
-                        "id": new_message.id,
-                        "message": content,
-                        "sender_id": user_id,
-                        "timestamp": new_message.created_at.isoformat()
-                    }, user_id)
+                        await db.refresh(new_message)
+                        
+                        # 3. Broadcast to Receiver
+                        response = {
+                            "type": "new_message",
+                            "id": new_message.id,
+                            "message": content,
+                            "sender_id": user_id,
+                            "timestamp": new_message.created_at.isoformat(),
+                        }
+                        await manager.send_personal_message(response, receiver_id)
+                        
+                        # 4. Echo back to Sender
+                        await manager.send_personal_message({
+                            "type": "message_sent",
+                            "id": new_message.id,
+                            "message": content,
+                            "sender_id": user_id,
+                            "timestamp": new_message.created_at.isoformat()
+                        }, user_id)
+                        print(f"DEBUG: Message sent successfully")
+
+                    except Exception as e:
+                        import traceback
+                        print(f"ERROR processing message: {e}\n{traceback.format_exc()}")
+                        await manager.send_personal_message({
+                            "type": "error",
+                            "message": f"Failed to send message: {str(e)}"
+                        }, user_id)
 
             # WebRTC Signaling
             elif message_data.get("action") in ["call_offer", "call_answer", "ice_candidate", "call_end"]:

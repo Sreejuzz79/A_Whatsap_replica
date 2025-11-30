@@ -113,6 +113,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None), db:
         if not user_id:
             await websocket.close(code=4003)
             return
+            
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            await websocket.close(code=4003)
+            return
 
         await manager.connect(websocket, user_id)
         

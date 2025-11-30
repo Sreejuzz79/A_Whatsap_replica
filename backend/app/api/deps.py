@@ -27,13 +27,21 @@ async def get_current_user(authorization: str | None = Header(None), db: AsyncSe
     
     try:
         user_id = int(user_id)
+        print(f"DEBUG: user_id cast to int: {user_id} (type: {type(user_id)})")
     except ValueError:
+        print(f"ERROR: Could not cast user_id to int: {user_id}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid user id in token")
         
     # Fetch user from DB to ensure they exist
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalars().first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user not found")
-        
-    return user
+    try:
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalars().first()
+        if not user:
+            print(f"ERROR: User {user_id} not found in DB")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user not found")
+        return user
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"CRITICAL DB ERROR in get_current_user: {e}\n{tb}")
+        raise HTTPException(status_code=500, detail=f"DB Error: {str(e)}")

@@ -1,0 +1,20 @@
+{
+"name": "whatsapp-mvp-frontend",
+"version": "0.0.1",
+"private": true,
+"scripts": {
+"dev": "vite",
+"build": "vite build",
+"preview": "vite preview"
+},
+"dependencies": {
+"react": "^18.2.0",
+"react-dom": "^18.2.0",
+"axios": "^1.4.0",
+"socket.io-client": "^4.7.1"
+},
+"devDependencies": {
+"vite": "^5.0.0",
+"@vitejs/plugin-react": "^4.0.0"
+}
+}

@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+fastapi
+uvicorn[standard]
+python-socketio[asyncio]
+python-jose
+passlib[bcrypt]
+sqlalchemy
+aiosqlite
+python-multipart
+aiomysql
+argon2-cffi
+asyncpg
+gunicorn

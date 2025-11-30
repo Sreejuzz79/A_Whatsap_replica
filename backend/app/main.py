@@ -75,13 +75,17 @@ from app.models.message import Message
 from app.sockets.connection_manager import manager
 
 # CORS Configuration
+# Allow all Vercel subdomains for this app
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://whatsap-replica-7ln1.vercel.app",
+    "https://whatsap-replica-7ln1-git-main-sreejesh-m-ss-projects.vercel.app",
+    "https://whatsap-replica-7ln1-i76rnspry-sreejesh-m-ss-projects.vercel.app"
 ]
 
 frontend_url = os.getenv("FRONTEND_URL")
-if frontend_url:
+if frontend_url and frontend_url not in origins:
     origins.append(frontend_url)
 
 app.add_middleware(

@@ -1,3 +1,11 @@
+aiofiles
+aiomysql
+aiosqlite
+argon2-cffi
+asyncpg
+fastapi
+gunicorn
+passlib[bcrypt]
 pydantic-settings
 python-jose
 python-multipart

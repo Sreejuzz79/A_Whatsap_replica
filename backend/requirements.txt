@@ -12,3 +12,4 @@ aiomysql
 argon2-cffi
 asyncpg
 gunicorn
+pydantic-settings

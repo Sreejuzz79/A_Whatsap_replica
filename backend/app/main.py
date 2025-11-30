@@ -12,6 +12,19 @@ app = FastAPI(title="whatsap-backend")
 print(f"DEBUG: DATABASE_URL used: {settings.DATABASE_URL}")
 
 
+# Import models to ensure they are registered with Base
+from app.models.base import Base
+from app.models.user import User
+from app.models.conversation import Conversation
+from app.models.message import Message
+from app.models.call_log import CallLog
+from app.db.session import engine
+
+@app.on_event("startup")
+async def startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
 # include routers
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(chat.router, prefix="/api", tags=["chat"])

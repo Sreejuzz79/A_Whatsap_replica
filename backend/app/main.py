@@ -146,6 +146,58 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None), db:
                         result = await db.execute(query)
                         conversation = result.scalars().first()
                         
+                        if not conversation:
+                            conversation = Conversation(user1_id=user_id, user2_id=receiver_id)
+                            db.add(conversation)
+                            await db.commit()
+                            await db.refresh(conversation)
+                        
+                        # Check if receiver is online
+                        is_delivered = receiver_id in manager.active_connections
+
+                        # 2. Save Message
+                        new_message = Message(
+                            conversation_id=conversation.id,
+                            sender_id=user_id,
+                            content=content,
+                            type='text',
+                            delivered=is_delivered
+                        )
+                        db.add(new_message)
+                        await db.commit()
+                        await db.refresh(new_message)
+                        
+                        # 3. Broadcast to Receiver
+                        response = {
+                            "type": "new_message",
+                            "id": new_message.id,
+                            "message": content,
+                            "sender_id": user_id,
+                            "timestamp": new_message.created_at.isoformat(),
+                            "delivered": is_delivered,
+                            "read": False
+                        }
+                        await manager.send_personal_message(response, receiver_id)
+                        
+                        # 4. Echo back to Sender
+                        await manager.send_personal_message({
+                            "type": "message_sent",
+                            "id": new_message.id,
+                            "message": content,
+                            "sender_id": user_id,
+                            "timestamp": new_message.created_at.isoformat(),
+                            "delivered": is_delivered,
+                            "read": False
+                        }, user_id)
+                        print(f"DEBUG: Message sent successfully")
+
+                    except Exception as e:
+                        import traceback
+                        print(f"ERROR processing message: {e}\n{traceback.format_exc()}")
+                        await manager.send_personal_message({
+                            "type": "error",
+                            "message": f"Failed to send message: {str(e)}"
+                        }, user_id)
 
             # WebRTC Signaling
             elif message_data.get("action") in ["call_offer", "call_answer", "ice_candidate", "call_end"]:

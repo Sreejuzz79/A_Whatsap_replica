@@ -63,6 +63,14 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
                 }
             };
 
+            pc.onsignalingstatechange = () => {
+                console.log("Signaling State:", pc.signalingState);
+            };
+
+            pc.onnegotiationneeded = () => {
+                console.log("Negotiation Needed");
+            };
+
             peerConnection.current = pc;
 
             // Process buffered candidates

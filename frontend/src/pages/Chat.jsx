@@ -99,7 +99,8 @@ export const Chat = () => {
                     content: data.message,
                     timestamp: data.timestamp,
                     sender: data.sender_id || user.id,
-                    read: false // Default to unread
+                    read: false, // Default to unread
+                    delivered: data.delivered // Capture delivered status
                 }]);
                 fetchContacts();
             } else if (data.type === 'messages_read') {
@@ -468,7 +469,7 @@ export const Chat = () => {
                                                 </span>
                                                 {isMe && (
                                                     <span className={msg.read ? "text-blue-400" : "text-gray-400"}>
-                                                        {msg.read ? <FaCheckDouble size={12} /> : <FaCheck size={12} />}
+                                                        {msg.read ? <FaCheckDouble size={12} /> : (msg.delivered ? <FaCheckDouble size={12} /> : <FaCheck size={12} />)}
                                                     </span>
                                                 )}
                                             </div>

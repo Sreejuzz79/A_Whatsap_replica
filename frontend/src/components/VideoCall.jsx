@@ -317,15 +317,17 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
             <div className="relative w-full max-w-4xl aspect-video bg-gray-900 rounded-lg overflow-hidden shadow-2xl flex items-center justify-center">
 
                 {/* Main Content: Remote Video OR Avatar Layout */}
-                {callAccepted && currentCallType === 'video' ? (
-                    <video
-                        ref={remoteVideoRef}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <div className="flex flex-col items-center z-10">
+                {/* Always render remote video for audio playback, hide if audio-only or not accepted yet */}
+                <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    className={`w-full h-full object-cover ${callAccepted && currentCallType === 'video' ? '' : 'hidden'}`}
+                />
+
+                {/* Avatar Overlay for Audio Calls or Connecting state */}
+                {(!callAccepted || currentCallType === 'audio') && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
                         <div className="w-32 h-32 bg-gray-600 rounded-full mb-4 flex items-center justify-center text-4xl overflow-hidden border-4 border-gray-700 shadow-lg">
                             {activeChat?.contact_user?.profile_picture ?
                                 <img src={activeChat.contact_user.profile_picture} className="w-full h-full object-cover" /> :

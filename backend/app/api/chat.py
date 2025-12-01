@@ -141,7 +141,9 @@ async def get_messages(contact_id: int, user: User = Depends(get_current_user), 
             "content": msg.content,
             "timestamp": msg.created_at.isoformat(),
             "sender_id": msg.sender_id,
-            "sender_username": sender.username if sender else "Unknown"
+            "sender_username": sender.username if sender else "Unknown",
+            "delivered": msg.delivered,
+            "read": msg.read
         })
         
     return formatted_messages

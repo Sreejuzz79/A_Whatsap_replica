@@ -64,6 +64,22 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
         };
     }, [socket, user]);
 
+    // Re-attach streams when UI updates (e.g. answering call reveals video element)
+    useEffect(() => {
+        if (remoteVideoRef.current && remoteStream) {
+            console.log("Attaching remote stream to video element");
+            remoteVideoRef.current.srcObject = remoteStream;
+            remoteVideoRef.current.play().catch(e => console.error("Error playing remote video:", e));
+        }
+    }, [remoteStream, callAccepted]);
+
+    useEffect(() => {
+        if (localVideoRef.current && localStream && callType === 'video') {
+            console.log("Attaching local stream to video element");
+            localVideoRef.current.srcObject = localStream;
+        }
+    }, [localStream, callType, callAccepted]);
+
     // Effect to start call if initiator
     useEffect(() => {
         if (isInitiator && !isCalling && !callAccepted && !incomingCall) {

@@ -211,6 +211,8 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
                 receiver_id: activeChat.contact_user.id,
                 offer: offer,
                 sender_name: user.full_name || user.username,
+                sender_id: user.id,
+                sender_picture: user.profile_picture,
                 call_id: callId,
                 call_type: callType
             }));

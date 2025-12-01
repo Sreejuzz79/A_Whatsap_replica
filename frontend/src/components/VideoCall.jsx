@@ -27,9 +27,59 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
     const localVideoRef = useRef();
     const remoteVideoRef = useRef();
     const peerConnection = useRef();
+    const iceCandidatesBuffer = useRef([]);
 
     useEffect(() => {
         if (!socket) return;
+        // ... (rest of useEffect)
+
+        // Initialize Peer Connection
+        const createPeerConnection = () => {
+            const pc = new RTCPeerConnection(ICE_SERVERS);
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate && activeChat) {
+                    socket.send(JSON.stringify({
+                        action: 'ice_candidate',
+                        receiver_id: activeChat.contact_user.id,
+                        candidate: event.candidate
+                    }));
+                }
+            };
+
+            pc.ontrack = (event) => {
+                console.log("Track received:", event.streams[0]);
+                setRemoteStream(event.streams[0]);
+                if (remoteVideoRef.current) {
+                    remoteVideoRef.current.srcObject = event.streams[0];
+                }
+            };
+
+            // Log connection state changes
+            pc.oniceconnectionstatechange = () => {
+                console.log("ICE Connection State:", pc.iceConnectionState);
+                if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+                    setErrorMessage("Connection unstable or failed.");
+                }
+            };
+
+            peerConnection.current = pc;
+
+            // Process buffered candidates
+            if (iceCandidatesBuffer.current.length > 0) {
+                console.log(`Processing ${iceCandidatesBuffer.current.length} buffered ICE candidates`);
+                iceCandidatesBuffer.current.forEach(async (candidate) => {
+                    try {
+                        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                    } catch (e) {
+                        console.error("Error adding buffered ice candidate", e);
+                    }
+                });
+                iceCandidatesBuffer.current = [];
+            }
+
+            return pc;
+        };
 
         const handleMessage = async (event) => {
             const data = JSON.parse(event.data);
@@ -45,11 +95,16 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
                     setStatusMessage("");
                 }
             } else if (data.action === 'ice_candidate') {
-                if (data.receiver_id === user.id && peerConnection.current) {
-                    try {
-                        await peerConnection.current.addIceCandidate(new RTCIceCandidate(data.candidate));
-                    } catch (e) {
-                        console.error("Error adding received ice candidate", e);
+                if (data.receiver_id === user.id) {
+                    if (peerConnection.current) {
+                        try {
+                            await peerConnection.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+                        } catch (e) {
+                            console.error("Error adding received ice candidate", e);
+                        }
+                    } else {
+                        console.log("Buffering ICE candidate");
+                        iceCandidatesBuffer.current.push(data.candidate);
                     }
                 }
             } else if (data.action === 'call_end') {

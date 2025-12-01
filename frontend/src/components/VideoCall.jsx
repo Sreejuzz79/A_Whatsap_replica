@@ -398,17 +398,17 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
             <div className="relative w-full max-w-4xl aspect-video bg-gray-900 rounded-lg overflow-hidden shadow-2xl flex items-center justify-center">
 
                 {/* Main Content: Remote Video OR Avatar Layout */}
-                {/* Always render remote video for audio playback, hide if audio-only or not accepted yet */}
+                {/* Always render remote video for audio playback, hide visually if audio-only or not accepted yet */}
                 <video
                     ref={remoteVideoRef}
                     autoPlay
                     playsInline
-                    className={`w-full h-full object-cover ${callAccepted && currentCallType === 'video' ? '' : 'hidden'}`}
+                    className={`w-full h-full object-cover transition-opacity duration-300 ${callAccepted && currentCallType === 'video' ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'}`}
                 />
 
                 {/* Avatar Overlay for Audio Calls or Connecting state */}
                 {(!callAccepted || currentCallType === 'audio') && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-auto">
                         <div className="w-32 h-32 bg-gray-600 rounded-full mb-4 flex items-center justify-center text-4xl overflow-hidden border-4 border-gray-700 shadow-lg">
                             {activeChat?.contact_user?.profile_picture ?
                                 <img src={activeChat.contact_user.profile_picture} className="w-full h-full object-cover" /> :
@@ -426,7 +426,22 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
                         <h2 className="text-3xl font-bold text-white mb-2">{activeChat?.contact_user?.full_name || activeChat?.contact_user?.username}</h2>
 
                         {callAccepted && currentCallType === 'audio' && (
-                            <p className="text-gray-400">Voice Call Connected</p>
+                            <div className="flex flex-col items-center">
+                                <p className="text-gray-400 mb-4">Voice Call Connected</p>
+                                <button
+                                    onClick={() => {
+                                        if (remoteVideoRef.current) {
+                                            remoteVideoRef.current.muted = false;
+                                            remoteVideoRef.current.play()
+                                                .then(() => console.log("Manual play success"))
+                                                .catch(e => console.error("Manual play failed", e));
+                                        }
+                                    }}
+                                    className="bg-gray-700 text-xs px-3 py-1 rounded-full hover:bg-gray-600 text-gray-300"
+                                >
+                                    Tap if no sound
+                                </button>
+                            </div>
                         )}
                     </div>
                 )}

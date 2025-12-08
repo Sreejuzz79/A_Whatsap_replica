@@ -174,9 +174,25 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
         };
 
         pc.ontrack = (event) => {
-            setRemoteStream(event.streams[0]);
+            // Create a new stream to handle audio/video properly
+            const newStream = new MediaStream();
+            event.streams[0].getTracks().forEach(track => {
+                newStream.addTrack(track);
+            });
+            
+            setRemoteStream(newStream);
             if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = event.streams[0];
+                remoteVideoRef.current.srcObject = newStream;
+                // Ensure media plays through the video element
+                remoteVideoRef.current.play().catch(e => console.error("Error playing remote media:", e));
+            }
+        };
+
+        // Add this to handle connection state changes
+        pc.onconnectionstatechange = () => {
+            console.log("Connection state changed:", pc.connectionState);
+            if (pc.connectionState === 'connected') {
+                console.log("WebRTC connection fully established");
             }
         };
 
@@ -195,14 +211,17 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
             // 1. Get User Media first
             setStatusMessage("Requesting camera/microphone access...");
             const constraints = {
-                video: callType === 'video',
+                video: callType === 'video' ? true : false,
                 audio: true
             };
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             setLocalStream(stream);
             if (localVideoRef.current && callType === 'video') localVideoRef.current.srcObject = stream;
 
-            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            // Add each track individually to the peer connection
+            stream.getTracks().forEach(track => {
+                pc.addTrack(track, stream);
+            });
 
             // 2. Create Call Log (Non-blocking)
             setStatusMessage("Connecting...");
@@ -259,14 +278,17 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
             }
 
             const constraints = {
-                video: incomingCall.call_type === 'video',
+                video: incomingCall.call_type === 'video' ? true : false,
                 audio: true
             };
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             setLocalStream(stream);
             if (localVideoRef.current && incomingCall.call_type === 'video') localVideoRef.current.srcObject = stream;
 
-            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            // Add each track individually to the peer connection
+            stream.getTracks().forEach(track => {
+                pc.addTrack(track, stream);
+            });
 
             await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
             const answer = await pc.createAnswer();

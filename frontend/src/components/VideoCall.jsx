@@ -47,13 +47,22 @@ const VideoCall = ({ socket, user, activeChat, onClose, isInitiator, callType = 
                 }
             };
 
-            pc.ontrack = (event) => {
-                console.log("Track received:", event.streams[0]);
-                setRemoteStream(event.streams[0]);
-                if (remoteVideoRef.current) {
-                    remoteVideoRef.current.srcObject = event.streams[0];
-                }
-            };
+                pc.ontrack = (event) => {
+                    console.log("Track received:", event.streams[0]);
+                    setRemoteStream(event.streams[0]);
+                    
+                    // Create a new stream to handle audio properly
+                    const newStream = new MediaStream();
+                    event.streams[0].getTracks().forEach(track => {
+                        newStream.addTrack(track);
+                    });
+                    
+                    if (remoteVideoRef.current) {
+                        remoteVideoRef.current.srcObject = newStream;
+                        // Ensure audio plays through the video element
+                        remoteVideoRef.current.play().catch(e => console.error("Error playing remote audio:", e));
+                    }
+                };
 
             // Log connection state changes
             pc.oniceconnectionstatechange = () => {

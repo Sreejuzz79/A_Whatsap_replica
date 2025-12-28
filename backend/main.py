@@ -90,10 +90,16 @@ if frontend_url and frontend_url not in origins:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "http://3.109.157.21",
+        "http://3.109.157.21:80",
+        "http://localhost",
+        "http://127.0.0.1",
+    ], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 @app.websocket("/ws/chat/")
